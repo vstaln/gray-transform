@@ -43,6 +43,7 @@ fn manifest() -> Value {
         "tools": [],
         "description": "rewrite or intercept input before it is sent",
         "commands": ["/transform"],
+        "command_descriptions": {"/transform": "list input rewrite rules"},
         "hooks": ["input/submit"],
         "capabilities": ["host.say"],
     })
