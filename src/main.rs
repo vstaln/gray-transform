@@ -41,7 +41,7 @@ fn manifest() -> Value {
         "version": env!("CARGO_PKG_VERSION"),
         "protocol": "2.0",
         "tools": [],
-        "description": "rewrite",
+        "description": "rewrite or intercept input before it is sent",
         "commands": ["/transform"],
         "hooks": ["input/submit"],
         "capabilities": ["host.say"],
