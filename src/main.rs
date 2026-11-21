@@ -58,7 +58,9 @@ fn state_dir() -> PathBuf {
 }
 
 fn parse_rules(s: &str) -> Vec<Rule> {
-    let Ok(v) = serde_json::from_str::<Value>(s) else { return vec![] };
+    let Ok(v) = serde_json::from_str::<Value>(s) else {
+        return vec![];
+    };
     v.as_array()
         .map(|a| {
             a.iter()
@@ -161,9 +163,7 @@ fn on_submit(params: &Value, rules: &[Rule], say: &mut dyn FnMut(&str)) -> Value
 }
 
 fn rules_listing(rules: &[Rule]) -> String {
-    let mut out = String::from(
-        "built-ins: ?quick <q>, ?verbose <q>, ping, time",
-    );
+    let mut out = String::from("built-ins: ?quick <q>, ?verbose <q>, ping, time");
     if rules.is_empty() {
         out.push_str("\nno custom rules (add them in ~/.gray/transform/rules.json)");
     } else {
@@ -178,8 +178,14 @@ fn rules_listing(rules: &[Rule]) -> String {
 /// `/transform …` — `argv` excludes the command name.
 fn run_command(argv: &[&str], rules: &[Rule]) -> String {
     match argv.first().copied() {
-        None | Some("list") => format!("gray-transform {} — {}", env!("CARGO_PKG_VERSION"), rules_listing(rules)),
-        Some(other) => format!("unknown /transform subcommand {other:?}. /transform lists the active rules."),
+        None | Some("list") => format!(
+            "gray-transform {} — {}",
+            env!("CARGO_PKG_VERSION"),
+            rules_listing(rules)
+        ),
+        Some(other) => {
+            format!("unknown /transform subcommand {other:?}. /transform lists the active rules.")
+        }
     }
 }
 
@@ -269,7 +275,9 @@ fn main() -> std::io::Result<()> {
         let stdin = std::io::stdin();
         for line in stdin.lock().lines() {
             let Ok(line) = line else { break };
-            let Ok(v) = serde_json::from_str::<Value>(&line) else { continue };
+            let Ok(v) = serde_json::from_str::<Value>(&line) else {
+                continue;
+            };
             if v.get("method").is_none() {
                 if let Some(id) = v.get("id").and_then(Value::as_str)
                     && let Some(tx) = reader_pending.lock().expect("pending").remove(id)
@@ -287,7 +295,13 @@ fn main() -> std::io::Result<()> {
     for req in work_rx {
         let rules = load_rules();
         let mut say = |t: &str| {
-            let _ = host_call(&stdout, &pending, &counter, "host/say", json!({ "text": t }));
+            let _ = host_call(
+                &stdout,
+                &pending,
+                &counter,
+                "host/say",
+                json!({ "text": t }),
+            );
         };
         let (reply, exit) = handle(&req, &mut say, &rules);
         if let Some(reply) = reply {
@@ -318,9 +332,13 @@ mod tests {
     fn call(method: &str, params: Value, says: &mut Says) -> Value {
         let rules = vec![];
         let mut f = says.f();
-        handle(&json!({ "id": 1, "method": method, "params": params }), &mut f, &rules)
-            .0
-            .unwrap()
+        handle(
+            &json!({ "id": 1, "method": method, "params": params }),
+            &mut f,
+            &rules,
+        )
+        .0
+        .unwrap()
     }
 
     #[test]
@@ -337,7 +355,11 @@ mod tests {
     #[test]
     fn quick_rewrites() {
         let mut s = Says(vec![]);
-        let r = call("input/submit", json!({"text": "?quick what is rust?"}), &mut s);
+        let r = call(
+            "input/submit",
+            json!({"text": "?quick what is rust?"}),
+            &mut s,
+        );
         assert_eq!(
             r["result"]["text"],
             "Respond briefly in 1-2 sentences: what is rust?"
@@ -347,7 +369,11 @@ mod tests {
     #[test]
     fn verbose_rewrites() {
         let mut s = Says(vec![]);
-        let r = call("input/submit", json!({"text": "?verbose explain lifetimes"}), &mut s);
+        let r = call(
+            "input/submit",
+            json!({"text": "?verbose explain lifetimes"}),
+            &mut s,
+        );
         assert_eq!(
             r["result"]["text"],
             "Answer thoroughly with examples: explain lifetimes"
@@ -435,7 +461,11 @@ mod tests {
         let mut s = Says(vec![]);
         let rules = vec![];
         let mut f = s.f();
-        let (reply, exit) = handle(&json!({ "id": 2, "method": "plugin/shutdown" }), &mut f, &rules);
+        let (reply, exit) = handle(
+            &json!({ "id": 2, "method": "plugin/shutdown" }),
+            &mut f,
+            &rules,
+        );
         assert!(reply.is_some() && exit);
     }
 }
